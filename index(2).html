@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Enigma X — une interface inspirée d'Enigma avec chiffrement moderne AES-256-GCM dans le navigateur." />
+  <title>Enigma X</title>
+
+  <style>
+    :root {
+      --bg: #0b0d0c;
+      --panel: #151916;
+      --panel-2: #1b211d;
+      --line: #303a32;
+      --text: #edf4ee;
+      --muted: #98a79b;
+      --green: #8cff9b;
+      --green-2: #3dbb63;
+      --amber: #ffc56d;
+      --danger: #ff7878;
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(61, 187, 99, 0.12), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(255, 197, 109, 0.08), transparent 24%),
+        var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 48px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-mark {
+      width: 52px;
+      height: 52px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: linear-gradient(145deg, #1d251f, #101411);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), var(--shadow);
+      color: var(--green);
+      font-weight: 900;
+      letter-spacing: 0.08em;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.7rem, 4vw, 2.7rem);
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(21, 25, 22, 0.8);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 18px rgba(140, 255, 155, 0.7);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 22px;
+      margin-bottom: 22px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(27, 33, 29, 0.96), rgba(18, 22, 19, 0.96));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 20px 22px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .card-header h2 {
+      margin: 0;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .card-header p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .card-body {
+      padding: 22px;
+    }
+
+    .rotor-bank {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .rotor {
+      position: relative;
+      min-height: 180px;
+      padding: 18px;
+      border: 1px solid #39433b;
+      border-radius: 20px;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgba(255,255,255,0.025) 0,
+          rgba(255,255,255,0.025) 1px,
+          transparent 1px,
+          transparent 10px
+        ),
+        linear-gradient(180deg, #222a24, #131713);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+      text-align: center;
+    }
+
+    .rotor-label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
+
+    .rotor-window {
+      width: 78px;
+      height: 78px;
+      display: grid;
+      place-items: center;
+      margin: 18px auto;
+      border: 1px solid #536055;
+      border-radius: 18px;
+      background: #070908;
+      color: var(--amber);
+      font-family: "Courier New", monospace;
+      font-size: 2.5rem;
+      font-weight: 800;
+      box-shadow: inset 0 0 24px rgba(255, 197, 109, 0.1);
+    }
+
+    .rotor-actions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .mini-btn,
+    .action-btn,
+    .tab-btn,
+    .key-btn {
+      border: 1px solid var(--line);
+      color: var(--text);
+      background: #171c18;
+      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+    }
+
+    .mini-btn:hover,
+    .action-btn:hover,
+    .tab-btn:hover,
+    .key-btn:hover {
+      transform: translateY(-1px);
+      border-color: #536557;
+    }
+
+    .mini-btn {
+      width: 38px;
+      height: 34px;
+      border-radius: 10px;
+      font-weight: 800;
+    }
+
+    .settings-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    label {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      outline: none;
+      color: var(--text);
+      background: #0f1310;
+    }
+
+    input,
+    select {
+      height: 46px;
+      padding: 0 13px;
+    }
+
+    textarea {
+      min-height: 190px;
+      padding: 16px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--green-2);
+      box-shadow: 0 0 0 3px rgba(61, 187, 99, 0.11);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      padding: 0 22px 18px;
+    }
+
+    .tab-btn {
+      padding: 10px 14px;
+      border-radius: 12px;
+    }
+
+    .tab-btn.active {
+      color: #071009;
+      background: var(--green);
+      border-color: var(--green);
+      font-weight: 800;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .action-btn {
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 13px;
+      font-weight: 750;
+    }
+
+    .action-btn.primary {
+      color: #061008;
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .action-btn.secondary {
+      color: #1b1305;
+      background: var(--amber);
+      border-color: var(--amber);
+    }
+
+    .action-btn.danger {
+      color: var(--danger);
+    }
+
+    .notice {
+      display: none;
+      margin-top: 14px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--muted);
+      background: rgba(15, 19, 16, 0.7);
+      line-height: 1.45;
+    }
+
+    .notice.show {
+      display: block;
+    }
+
+    .notice.error {
+      border-color: rgba(255, 120, 120, 0.4);
+      color: #ffb0b0;
+    }
+
+    .keyboard {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .key-btn {
+      aspect-ratio: 1;
+      border-radius: 999px;
+      font-family: "Courier New", monospace;
+      font-weight: 900;
+      background: radial-gradient(circle at 35% 30%, #252c27, #0d100e 72%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .key-btn:active,
+    .key-btn.flash {
+      color: #111;
+      background: var(--amber);
+      border-color: var(--amber);
+      box-shadow: 0 0 20px rgba(255, 197, 109, 0.42);
+    }
+
+    .security-note {
+      margin-top: 22px;
+      padding: 16px 18px;
+      border: 1px solid rgba(140, 255, 155, 0.18);
+      border-radius: 16px;
+      color: var(--muted);
+      background: rgba(140, 255, 155, 0.04);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    footer {
+      margin-top: 24px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    code {
+      color: var(--green);
+    }
+
+    @media (max-width: 900px) {
+      .hero,
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .app {
+        width: min(100% - 18px, 1180px);
+        padding-top: 14px;
+      }
+
+      .rotor-bank {
+        grid-template-columns: 1fr;
+      }
+
+      .keyboard {
+        grid-template-columns: repeat(7, 1fr);
+      }
+
+      .card-header,
+      .card-body {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">EX</div>
+        <div>
+          <h1>Enigma X</h1>
+          <p class="subtitle">L'esthétique des rotors. La cryptographie moderne.</p>
+        </div>
+      </div>
+
+      <div class="status">
+        <span class="status-dot"></span>
+        Chiffrement local dans le navigateur
+      </div>
+    </header>
+
+    <section class="hero">
+      <article class="card">
+        <div class="card-header">
+          <h2>Rotor Bank</h2>
+          <p>Les rotors participent à la dérivation de la clé, mais le chiffrement réel utilise AES-256-GCM.</p>
+        </div>
+
+        <div class="card-body">
+          <div class="rotor-bank">
+            <div class="rotor" data-rotor="0">
+              <div class="rotor-label">Rotor I</div>
+              <div class="rotor-window">A</div>
+              <div class="rotor-actions">
+                <button class="mini-btn rotor-down" aria-label="Rotor précédent">−</button>
+                <button class="mini-btn rotor-up" aria-label="Rotor suivant">+</button>
+              </div>
+            </div>
+
+            <div class="rotor" data-rotor="1">
+              <div class="rotor-label">Rotor II</div>
+              <div class="rotor-window">A</div>
+              <div class="rotor-actions">
+                <button class="mini-btn rotor-down" aria-label="Rotor précédent">−</button>
+                <button class="mini-btn rotor-up" aria-label="Rotor suivant">+</button>
+              </div>
+            </div>
+
+            <div class="rotor" data-rotor="2">
+              <div class="rotor-label">Rotor III</div>
+              <div class="rotor-window">A</div>
+              <div class="rotor-actions">
+                <button class="mini-btn rotor-down" aria-label="Rotor précédent">−</button>
+                <button class="mini-btn rotor-up" aria-label="Rotor suivant">+</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="keyboard" id="keyboard" aria-label="Clavier Enigma"></div>
+        </div>
+      </article>
+
+      <aside class="card">
+        <div class="card-header">
+          <h2>Configuration secrète</h2>
+          <p>Le mot de passe, les rotors et le plugboard doivent être identiques pour déchiffrer.</p>
+        </div>
+
+        <div class="card-body">
+          <div class="settings-grid">
+            <label>
+              Mot de passe principal
+              <input id="password" type="password" autocomplete="new-password" placeholder="Utilise une phrase longue et unique" />
+            </label>
+
+            <label>
+              Plugboard
+              <input id="plugboard" type="text" value="AF BR DX" placeholder="Exemple : AF BR DX" />
+            </label>
+
+            <label>
+              Niveau PBKDF2
+              <select id="iterations">
+                <option value="250000">250 000 itérations</option>
+                <option value="600000" selected>600 000 itérations</option>
+                <option value="1000000">1 000 000 itérations</option>
+              </select>
+            </label>
+
+            <button class="action-btn" id="randomizeBtn">Randomiser les rotors</button>
+          </div>
+
+          <div class="security-note">
+            <strong>Important :</strong> cette démonstration chiffre avec l'API Web Crypto. Aucun message ni mot de passe n'est envoyé à un serveur.
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="workspace">
+      <article class="card">
+        <div class="card-header">
+          <h2>Message</h2>
+          <p>Écris un texte clair, puis chiffre-le. Tu peux aussi coller un paquet chiffré pour le déchiffrer.</p>
+        </div>
+
+        <div class="tabs">
+          <button class="tab-btn active" id="plainTab">Texte clair</button>
+          <button class="tab-btn" id="cipherTab">Texte chiffré</button>
+        </div>
+
+        <div class="card-body" style="padding-top:0">
+          <textarea id="inputText" placeholder="RENDEZ-VOUS DEMAIN À 09:00..."></textarea>
+
+          <div class="actions">
+            <button class="action-btn primary" id="encryptBtn">Chiffrer</button>
+            <button class="action-btn secondary" id="decryptBtn">Déchiffrer</button>
+            <button class="action-btn" id="clearBtn">Effacer</button>
+          </div>
+
+          <div class="notice" id="notice"></div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-header">
+          <h2>Sortie</h2>
+          <p>Le résultat contient la version, le sel, le vecteur d'initialisation et le texte chiffré.</p>
+        </div>
+
+        <div class="card-body">
+          <textarea id="outputText" readonly placeholder="La sortie apparaîtra ici..."></textarea>
+
+          <div class="actions">
+            <button class="action-btn" id="copyBtn">Copier</button>
+            <button class="action-btn" id="downloadBtn">Télécharger</button>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <footer>
+      Enigma X — prototype éducatif. Ne remplace pas un audit de sécurité professionnel.
+    </footer>
+  </main>
+
+  <script>
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const rotorPositions = [0, 0, 0];
+
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+
+    const inputText = document.getElementById("inputText");
+    const outputText = document.getElementById("outputText");
+    const passwordInput = document.getElementById("password");
+    const plugboardInput = document.getElementById("plugboard");
+    const iterationsSelect = document.getElementById("iterations");
+    const notice = document.getElementById("notice");
+
+    function showNotice(message, isError = false) {
+      notice.textContent = message;
+      notice.className = `notice show${isError ? " error" : ""}`;
+    }
+
+    function clearNotice() {
+      notice.className = "notice";
+      notice.textContent = "";
+    }
+
+    function updateRotorDisplays() {
+      document.querySelectorAll(".rotor").forEach((rotorElement, index) => {
+        rotorElement.querySelector(".rotor-window").textContent = alphabet[rotorPositions[index]];
+      });
+    }
+
+    function stepRotors() {
+      rotorPositions[2] = (rotorPositions[2] + 1) % 26;
+
+      if (rotorPositions[2] === 0) {
+        rotorPositions[1] = (rotorPositions[1] + 1) % 26;
+      }
+
+      if (rotorPositions[2] === 0 && rotorPositions[1] === 0) {
+        rotorPositions[0] = (rotorPositions[0] + 1) % 26;
+      }
+
+      updateRotorDisplays();
+    }
+
+    function rotorString() {
+      return rotorPositions.map(position => alphabet[position]).join("-");
+    }
+
+    function normalizePlugboard(value) {
+      return value
+        .toUpperCase()
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .sort()
+        .join(" ");
+    }
+
+    function validatePlugboard(value) {
+      const pairs = normalizePlugboard(value).split(" ").filter(Boolean);
+      const used = new Set();
+
+      for (const pair of pairs) {
+        if (!/^[A-Z]{2}$/.test(pair)) {
+          throw new Error("Le plugboard doit contenir des paires de lettres, par exemple AF BR DX.");
+        }
+
+        if (pair[0] === pair[1]) {
+          throw new Error("Une lettre ne peut pas être connectée à elle-même.");
+        }
+
+        for (const letter of pair) {
+          if (used.has(letter)) {
+            throw new Error(`La lettre ${letter} est utilisée plusieurs fois dans le plugboard.`);
+          }
+          used.add(letter);
+        }
+      }
+
+      return pairs.join(" ");
+    }
+
+    function bytesToBase64(bytes) {
+      let binary = "";
+      bytes.forEach(byte => binary += String.fromCharCode(byte));
+      return btoa(binary);
+    }
+
+    function base64ToBytes(base64) {
+      const binary = atob(base64);
+      return Uint8Array.from(binary, char => char.charCodeAt(0));
+    }
+
+    async function deriveKey(password, salt, settingsString, iterations) {
+      const passwordMaterial = await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(`${password}|${settingsString}`),
+        "PBKDF2",
+        false,
+        ["deriveKey"]
+      );
+
+      return crypto.subtle.deriveKey(
+        {
+          name: "PBKDF2",
+          salt,
+          iterations,
+          hash: "SHA-256"
+        },
+        passwordMaterial,
+        {
+          name: "AES-GCM",
+          length: 256
+        },
+        false,
+        ["encrypt", "decrypt"]
+      );
+    }
+
+    async function encryptMessage() {
+      clearNotice();
+
+      try {
+        const plaintext = inputText.value;
+        const password = passwordInput.value;
+        const plugboard = validatePlugboard(plugboardInput.value);
+        const iterations = Number(iterationsSelect.value);
+
+        if (!plaintext.trim()) {
+          throw new Error("Écris un message avant de le chiffrer.");
+        }
+
+        if (password.length < 12) {
+          throw new Error("Utilise un mot de passe d'au moins 12 caractères.");
+        }
+
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const settings = `rotors=${rotorString()}|plugboard=${plugboard}`;
+        const key = await deriveKey(password, salt, settings, iterations);
+
+        const encryptedBuffer = await crypto.subtle.encrypt(
+          {
+            name: "AES-GCM",
+            iv,
+            additionalData: encoder.encode(settings)
+          },
+          key,
+          encoder.encode(plaintext)
+        );
+
+        const packet = {
+          app: "Enigma-X",
+          version: 1,
+          algorithm: "AES-256-GCM",
+          kdf: "PBKDF2-SHA-256",
+          iterations,
+          rotors: rotorString(),
+          plugboard,
+          salt: bytesToBase64(salt),
+          iv: bytesToBase64(iv),
+          ciphertext: bytesToBase64(new Uint8Array(encryptedBuffer))
+        };
+
+        outputText.value = btoa(unescape(encodeURIComponent(JSON.stringify(packet))));
+        stepRotors();
+        showNotice("Message chiffré avec succès.");
+      } catch (error) {
+        showNotice(error.message || "Impossible de chiffrer le message.", true);
+      }
+    }
+
+    async function decryptMessage() {
+      clearNotice();
+
+      try {
+        const encodedPacket = inputText.value.trim();
+        const password = passwordInput.value;
+
+        if (!encodedPacket) {
+          throw new Error("Colle un paquet chiffré dans la zone de message.");
+        }
+
+        if (!password) {
+          throw new Error("Entre le mot de passe utilisé lors du chiffrement.");
+        }
+
+        let packet;
+
+        try {
+          packet = JSON.parse(decodeURIComponent(escape(atob(encodedPacket))));
+        } catch {
+          throw new Error("Le paquet chiffré n'est pas valide.");
+        }
+
+        if (packet.app !== "Enigma-X" || packet.version !== 1) {
+          throw new Error("Format Enigma X non reconnu.");
+        }
+
+        const settings = `rotors=${packet.rotors}|plugboard=${packet.plugboard}`;
+        const key = await deriveKey(
+          password,
+          base64ToBytes(packet.salt),
+          settings,
+          Number(packet.iterations)
+        );
+
+        const decryptedBuffer = await crypto.subtle.decrypt(
+          {
+            name: "AES-GCM",
+            iv: base64ToBytes(packet.iv),
+            additionalData: encoder.encode(settings)
+          },
+          key,
+          base64ToBytes(packet.ciphertext)
+        );
+
+        outputText.value = decoder.decode(decryptedBuffer);
+        showNotice("Message déchiffré avec succès.");
+      } catch (error) {
+        const message =
+          error.name === "OperationError"
+            ? "Déchiffrement impossible : mauvais mot de passe ou paquet modifié."
+            : error.message || "Impossible de déchiffrer le message.";
+
+        showNotice(message, true);
+      }
+    }
+
+    function randomizeRotors() {
+      for (let index = 0; index < rotorPositions.length; index += 1) {
+        rotorPositions[index] = crypto.getRandomValues(new Uint8Array(1))[0] % 26;
+      }
+
+      updateRotorDisplays();
+      showNotice(`Rotors réglés sur ${rotorString()}.`);
+    }
+
+    function buildKeyboard() {
+      const keyboard = document.getElementById("keyboard");
+
+      alphabet.split("").forEach(letter => {
+        const button = document.createElement("button");
+        button.className = "key-btn";
+        button.type = "button";
+        button.textContent = letter;
+        button.setAttribute("aria-label", `Lettre ${letter}`);
+
+        button.addEventListener("click", () => {
+          inputText.value += letter;
+          inputText.focus();
+          stepRotors();
+
+          button.classList.add("flash");
+          window.setTimeout(() => button.classList.remove("flash"), 140);
+        });
+
+        keyboard.appendChild(button);
+      });
+    }
+
+    document.querySelectorAll(".rotor").forEach((rotorElement, index) => {
+      rotorElement.querySelector(".rotor-up").addEventListener("click", () => {
+        rotorPositions[index] = (rotorPositions[index] + 1) % 26;
+        updateRotorDisplays();
+      });
+
+      rotorElement.querySelector(".rotor-down").addEventListener("click", () => {
+        rotorPositions[index] = (rotorPositions[index] + 25) % 26;
+        updateRotorDisplays();
+      });
+    });
+
+    document.getElementById("encryptBtn").addEventListener("click", encryptMessage);
+    document.getElementById("decryptBtn").addEventListener("click", decryptMessage);
+    document.getElementById("randomizeBtn").addEventListener("click", randomizeRotors);
+
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      inputText.value = "";
+      outputText.value = "";
+      clearNotice();
+      inputText.focus();
+    });
+
+    document.getElementById("copyBtn").addEventListener("click", async () => {
+      if (!outputText.value) {
+        showNotice("Il n'y a encore rien à copier.", true);
+        return;
+      }
+
+      await navigator.clipboard.writeText(outputText.value);
+      showNotice("Sortie copiée dans le presse-papiers.");
+    });
+
+    document.getElementById("downloadBtn").addEventListener("click", () => {
+      if (!outputText.value) {
+        showNotice("Il n'y a encore rien à télécharger.", true);
+        return;
+      }
+
+      const blob = new Blob([outputText.value], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = `enigma-x-${Date.now()}.txt`;
+      link.click();
+
+      URL.revokeObjectURL(url);
+      showNotice("Fichier généré.");
+    });
+
+    document.getElementById("plainTab").addEventListener("click", () => {
+      document.getElementById("plainTab").classList.add("active");
+      document.getElementById("cipherTab").classList.remove("active");
+      inputText.placeholder = "RENDEZ-VOUS DEMAIN À 09:00...";
+    });
+
+    document.getElementById("cipherTab").addEventListener("click", () => {
+      document.getElementById("cipherTab").classList.add("active");
+      document.getElementById("plainTab").classList.remove("active");
+      inputText.placeholder = "Colle ici le paquet Enigma X...";
+    });
+
+    buildKeyboard();
+    updateRotorDisplays();
+  </script>
+</body>
+</html>
